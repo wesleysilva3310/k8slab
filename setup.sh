@@ -60,10 +60,10 @@ echo nameserver 8.8.8.8 | sudo tee /etc/resolv.conf
 sudo apt install dnsmasq
 sudo systemctl restart dnsmasq
 sudo cat >>/etc/hosts<<EOF
-192.168.1.100   kmaster
+192.168.1.100   k8smaster
 192.168.1.105   dnsserver
-192.168.1.101    kworker1
-192.168.1.102   kworker2
+192.168.1.101    k8sworker1
+192.168.1.102   k8sworker2
 EOF
 fi
 
@@ -156,7 +156,7 @@ echo "K8s bootstrap configuration complete!"
 fi
 #Creating script to add kube dir and permissions
 if
-        [ "$HOSTNAME" = kmaster ];
+        [ "$HOSTNAME" = k8smaster ];
 then
 echo "[k8s kmaster TASK 1] Pull required containers"
 kubeadm config images pull >/dev/null 2>&1
@@ -185,7 +185,7 @@ fi
 
 #Creating script to k8s workers to be added to cluster
 if 
-        [ "$HOSTNAME" = kworker1 ] || [ "$HOSTNAME" = kworker2 ];
+        [ "$HOSTNAME" = k8sworker1 ] || [ "$HOSTNAME" = k8sworker2 ];
 then
 #run this only when creating the VM for the first time, using root user
 cat > /usr/joincluster.sh << EOF
