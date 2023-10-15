@@ -12,7 +12,7 @@ echo "Installation Complete!"
 
 # Instalar o docker
 if
-        [ "$HOSTNAME" != kmaster ] && [ "$HOSTNAME" != kworker1 ] && [ "$HOSTNAME" != kworker2 ];
+        [ "$HOSTNAME" != k8smaster ] && [ "$HOSTNAME" != k8sworker1 ] && [ "$HOSTNAME" != k8sworker2 ];
 then
 echo "Installing docker"
 sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
@@ -72,20 +72,20 @@ sudo cat >>/etc/resolv.conf<<EOF
 nameserver 192.168.1.105
 EOF
 
-# Installing ansible on kmaster vm
+# Installing ansible on k8smaster vm
 if
-        [ "$HOSTNAME" = kmaster ];
+        [ "$HOSTNAME" = k8smaster ];
 then
-        echo "Installing ansible on kmaster VM"
+        echo "Installing ansible on k8smaster VM"
         sudo apt install ansible -y
         echo "Installation complete!"
 fi
 
-# installing helm on kmaster vm
+# installing helm on k8smaster vm
 if
-        [ "$HOSTNAME" = kmaster ];
+        [ "$HOSTNAME" = k8smaster ];
 then
-        echo "Installing helm on kmaster VM"
+        echo "Installing helm on k8smaster VM"
         wget https://get.helm.sh/helm-v3.9.0-linux-amd64.tar.gz
         tar -zxvf helm-v3.9.0-linux-amd64.tar.gz
         mv linux-amd64/helm /usr/local/bin/helm
@@ -96,7 +96,7 @@ fi
 #Kubernetes configuration
 
 if 
-        [ "$HOSTNAME" = kmaster ] || [ "$HOSTNAME" = kworker1 ] || [ "$HOSTNAME" = kworker2 ];
+        [ "$HOSTNAME" = k8smaster ] || [ "$HOSTNAME" = k8sworker1 ] || [ "$HOSTNAME" = k8sworker2 ];
 then
 echo "[k8s TASK 1] Disable and turn off SWAP"
 sed -i '/swap/d' /etc/fstab
@@ -147,9 +147,9 @@ echo "export TERM=xterm" >> /etc/bash.bashrc
 
 echo "[k8s TASK 10] Update /etc/hosts file"
 cat >>/etc/hosts<<END3
-192.168.1.100  kmaster
-192.168.1.101   kworker1
-192.168.1.102  kworker2
+192.168.1.100  k8smaster
+192.168.1.101   k8sworker1
+192.168.1.102  k8sworker2
 END3
 
 echo "K8s bootstrap configuration complete!"
@@ -158,16 +158,16 @@ fi
 if
         [ "$HOSTNAME" = k8smaster ];
 then
-echo "[k8s kmaster TASK 1] Pull required containers"
+echo "[k8s k8smaster TASK 1] Pull required containers"
 kubeadm config images pull >/dev/null 2>&1
 
-echo "[k8s kmaster TASK 2] Initialize Kubernetes Cluster"
+echo "[k8s k8smaster TASK 2] Initialize Kubernetes Cluster"
 kubeadm init --apiserver-advertise-address=192.168.1.100 --pod-network-cidr=192.168.0.0/16 >> /root/kubeinit.log 2>/dev/null
 
-echo "[k8s kmaster TASK 3] Deploy Calico network"
+echo "[k8s k8smaster TASK 3] Deploy Calico network"
 kubectl --kubeconfig=/etc/kubernetes/admin.conf create -f https://docs.projectcalico.org/v3.18/manifests/calico.yaml >/dev/null 2>&1
 
-echo "[k8s kmaster TASK 4] Generate and save cluster join command to /joincluster.sh"
+echo "[k8s k8smaster TASK 4] Generate and save cluster join command to /joincluster.sh"
 kubeadm token create --print-join-command > /joincluster.sh 2>/dev/null
 sleep 30
 
@@ -179,7 +179,7 @@ echo "Creating kube dir and permissions"
  mkdir -p $HOME/.kube
  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
  sudo chown $(id -u):$(id -g) $HOME/.kube/config
-echo "k8s kmaster configuration complete!"
+echo "k8s k8smaster configuration complete!"
 END4
 fi
 
@@ -191,14 +191,14 @@ then
 cat > /usr/joincluster.sh << EOF
 echo "Join node to Kubernetes Cluster"
 apt install -qq -y sshpass >/dev/null 2>&1
-sshpass -p "kubeadmin" scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no kmaster:/joincluster.sh /joincluster.sh 2>/dev/null
+sshpass -p "kubeadmin" scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no k8smaster:/joincluster.sh /joincluster.sh 2>/dev/null
 bash /joincluster.sh >/dev/null 2>&1
 EOF
 fi
 
 # Install docker on k8s nodes
 if
-        [ "$HOSTNAME" = kmaster ];
+        [ "$HOSTNAME" = k8smaster ];
 then
 echo "Installing docker"
 sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
